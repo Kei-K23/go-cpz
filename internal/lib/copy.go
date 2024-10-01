@@ -17,7 +17,7 @@ import (
 // Limit the number of concurrent copy operations
 var semaphore = make(chan struct{}, 5) // Adjust the size as needed to control concurrency
 
-func Copy(src, dest string) error {
+func Copy(src, dest string, showProgress bool) error {
 	// Get the source information
 	info, err := os.Stat(src)
 	if err != nil {
@@ -36,15 +36,15 @@ func Copy(src, dest string) error {
 			// Get the destination path
 			destPath := filepath.Join(dest, path[len(src):])
 
-			// If encounter dir while current source file walk through
+			// If encounter dir while walking through the source folder
 			if info.IsDir() {
-				// Create all those files and folders in the newly created destination folder path
+				// Create all the directories in the destination path
 				return os.MkdirAll(destPath, info.Mode())
 			}
 
 			// If it's a file, copy it
 			wg.Add(1) // Increment the wait group to track the goroutines
-			copyFile(path, destPath, &wg)
+			copyFile(path, destPath, &wg, showProgress)
 			return nil // Return nil to continue walking the directory
 		})
 		if err != nil {
@@ -53,14 +53,14 @@ func Copy(src, dest string) error {
 	} else {
 		// Copy normal file
 		wg.Add(1) // Increment the wait group to track the goroutines
-		copyFile(src, dest, &wg)
+		copyFile(src, dest, &wg, showProgress)
 	}
 
 	wg.Wait() // Wait for all goroutines to finish
 	return nil
 }
 
-func copyFile(src, dest string, wg *sync.WaitGroup) {
+func copyFile(src, dest string, wg *sync.WaitGroup, showProgress bool) {
 	semaphore <- struct{}{} // Acquire a spot in the semaphore to limit concurrency
 
 	// Start the goroutine
@@ -84,25 +84,29 @@ func copyFile(src, dest string, wg *sync.WaitGroup) {
 		}
 		defer destFile.Close()
 
-		// Get the metadata of the source file
-		srcInfo, err := srcFile.Stat()
-		if err != nil {
-			fmt.Printf("Error getting source file information: %v\n", err)
-			return
+		// Declare the reader
+		var rdr io.Reader = srcFile
+
+		if showProgress {
+			// Get the metadata of the source file
+			srcInfo, err := srcFile.Stat()
+			if err != nil {
+				fmt.Printf("Error getting source file information: %v\n", err)
+				return
+			}
+			// Create progress indicator
+			pbBar := pb.Full.Start64(srcInfo.Size())
+			defer pbBar.Finish() // Ensure the progress bar finishes
+			rdr = pbBar.NewProxyReader(srcFile)
 		}
 
-		// Create progress indicator
-		pbBar := pb.Full.Start64(srcInfo.Size())
-		pbBarRdr := pbBar.NewProxyReader(srcFile)
-
 		// Start copying the file
-		_, err = io.Copy(destFile, pbBarRdr)
+		_, err = io.Copy(destFile, rdr)
 		if err != nil {
 			fmt.Printf("Error copying file: %v\n", err)
 			return
 		}
 
-		pbBar.Finish()
 		fmt.Printf("Copied %s to %s\n", src, dest)
 	}()
 }

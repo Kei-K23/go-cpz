@@ -11,10 +11,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// cpCmd represents the cp command
-var cpCmd = &cobra.Command{
-	Use:   "cp [source] [destination]",
-	Short: "Copy files or directories with progress bar",
+// mvCmd represents the mv command
+var mvCmd = &cobra.Command{
+	Use:   "mv [source] [destination]",
+	Short: "Move files or directories with progress bar",
 	Run: func(cmd *cobra.Command, args []string) {
 		source := args[0]
 		destination := args[1]
@@ -25,13 +25,19 @@ var cpCmd = &cobra.Command{
 			fmt.Printf("Error : %v\n", err)
 			os.Exit(1)
 		}
-		fmt.Println("Copy completed successfully")
+
+		err = os.RemoveAll(source)
+		if err != nil {
+			fmt.Printf("Error : %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Println("Move completed successfully")
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(cpCmd)
+	rootCmd.AddCommand(mvCmd)
 
 	// Define flag for cp command
-	cpCmd.Flags().BoolP("progress", "p", true, "Show progress indicator")
+	mvCmd.Flags().BoolP("progress", "p", true, "Show progress indicator")
 }
