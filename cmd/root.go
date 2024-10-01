@@ -23,6 +23,18 @@ func Execute() {
 	}
 }
 
+func completionCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "completion",
+		Short: "Generate the autocompletion script for the specified shell",
+	}
+}
+
 func init() {
+	completion := completionCommand()
+	// mark completion command hidden
+	completion.Hidden = true
+	rootCmd.AddCommand(completion)
+
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
