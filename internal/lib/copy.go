@@ -28,7 +28,7 @@ func Copy(src, dest string) error {
 
 	if info.IsDir() {
 		// Handle directory copy
-		return filepath.Walk(src, func(path string, info fs.FileInfo, err error) error {
+		err = filepath.Walk(src, func(path string, info fs.FileInfo, err error) error {
 			if err != nil {
 				return err
 			}
@@ -38,29 +38,34 @@ func Copy(src, dest string) error {
 
 			// If encounter dir while current source file walk through
 			if info.IsDir() {
-				// Create all those file and folder in the newly created destination folder path
+				// Create all those files and folders in the newly created destination folder path
 				return os.MkdirAll(destPath, info.Mode())
 			}
+
+			// If it's a file, copy it
 			wg.Add(1) // Increment the wait group to track the goroutines
-			return copyFile(path, destPath, &wg)
+			copyFile(path, destPath, &wg)
+			return nil // Return nil to continue walking the directory
 		})
+		if err != nil {
+			return err
+		}
 	} else {
 		// Copy normal file
 		wg.Add(1) // Increment the wait group to track the goroutines
-		err = copyFile(src, dest, &wg)
+		copyFile(src, dest, &wg)
 	}
 
-	wg.Wait() // Wait all goroutines to finish
-	return err
+	wg.Wait() // Wait for all goroutines to finish
+	return nil
 }
 
-func copyFile(src, dest string, wg *sync.WaitGroup) error {
-	semaphore <- struct{}{}
+func copyFile(src, dest string, wg *sync.WaitGroup) {
+	semaphore <- struct{}{} // Acquire a spot in the semaphore to limit concurrency
 
 	// Start the goroutine
 	go func() {
-		// Decrement the wait group counter when done this goroutines
-		defer wg.Done()
+		defer wg.Done()                // Decrement the wait group counter when done
 		defer func() { <-semaphore }() // Release the semaphore slot
 
 		// Open the source file
@@ -71,7 +76,7 @@ func copyFile(src, dest string, wg *sync.WaitGroup) error {
 		}
 		defer srcFile.Close()
 
-		// Create destination file
+		// Create the destination file
 		destFile, err := os.Create(dest)
 		if err != nil {
 			fmt.Printf("Error creating destination file: %v\n", err)
@@ -79,10 +84,10 @@ func copyFile(src, dest string, wg *sync.WaitGroup) error {
 		}
 		defer destFile.Close()
 
-		// Get the metadata of source file
+		// Get the metadata of the source file
 		srcInfo, err := srcFile.Stat()
 		if err != nil {
-			fmt.Printf("Error source file information: %v\n", err)
+			fmt.Printf("Error getting source file information: %v\n", err)
 			return
 		}
 
@@ -100,5 +105,4 @@ func copyFile(src, dest string, wg *sync.WaitGroup) error {
 		pbBar.Finish()
 		fmt.Printf("Copied %s to %s\n", src, dest)
 	}()
-	return nil
 }
