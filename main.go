@@ -1,6 +1,5 @@
 /*
-Copyright © 2024 NAME HERE <EMAIL ADDRESS>
-
+Copyright © 2024 Kei-K23 <arkar.dev.kei@gmail.com>
 */
 package main
 
