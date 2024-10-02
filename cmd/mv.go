@@ -16,22 +16,27 @@ var mvCmd = &cobra.Command{
 	Use:   "mv [source] [destination]",
 	Short: "Move files or directories with progress bar",
 	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) < 2 {
+			fmt.Println("please provide both source and destination paths e.g(cpz mv <source> <destination>)")
+			return
+		}
+
 		source := args[0]
 		destination := args[1]
 		showProgress, _ := cmd.Flags().GetBool("progress")
 
 		err := lib.Copy(source, destination, showProgress)
 		if err != nil {
-			fmt.Printf("Error : %v\n", err)
+			fmt.Printf("error : %v\n", err)
 			os.Exit(1)
 		}
 
 		err = os.RemoveAll(source)
 		if err != nil {
-			fmt.Printf("Error : %v\n", err)
+			fmt.Printf("error : %v\n", err)
 			os.Exit(1)
 		}
-		fmt.Println("Move completed successfully")
+		fmt.Println("move completed successfully")
 	},
 }
 
