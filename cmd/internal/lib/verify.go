@@ -47,9 +47,13 @@ func verifyDir(srcDir, destDir string) error {
 		if err != nil {
 			return err
 		}
+		fmt.Println(srcDir + "  : srcDir")
+		fmt.Println(srcPath + "  : srcPath")
+		fmt.Println(relativePath + " : relativePath")
 
 		// Generate the corresponding destination relative file path from src relative file path
 		destPath := filepath.Join(destDir, relativePath)
+		fmt.Println(destPath + " : destPath")
 
 		// Get the info about destination relative file
 		destPathInfo, err := os.Stat(destPath)
