@@ -25,8 +25,11 @@ var cpCmd = &cobra.Command{
 		destination := args[1]
 		showProgress, _ := cmd.Flags().GetBool("progress")
 		excludeFilenames, _ := cmd.Flags().GetStringSlice("filter")
+		excludeExtensions, _ := cmd.Flags().GetStringSlice("extensions")
+		excludeRegexs, _ := cmd.Flags().GetStringSlice("regex")
 
-		err := lib.Copy(source, destination, showProgress, excludeFilenames, nil)
+		err := lib.Copy(source, destination, showProgress, excludeFilenames, excludeExtensions, excludeRegexs)
+
 		if err != nil {
 			fmt.Printf("error : %v\n", err)
 			os.Exit(1)
@@ -40,5 +43,7 @@ func init() {
 
 	// Define flag for cp command
 	cpCmd.Flags().BoolP("progress", "p", false, "Show progress indicator")
-	cpCmd.Flags().StringSliceP("filter", "f", nil, "Filter file name to exclude when copying")
+	cpCmd.Flags().StringSliceP("filter", "f", nil, "Filter files to exclude when copying with file names")
+	cpCmd.Flags().StringSliceP("extensions", "e", nil, "Filter files to exclude when copying with extensions")
+	cpCmd.Flags().StringSliceP("regex", "r", nil, "Filter files to exclude when copying with regular expression")
 }

@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -18,7 +19,7 @@ import (
 // Limit the number of concurrent copy operations
 var semaphore = make(chan struct{}, 5) // Adjust the size as needed to control concurrency
 
-func Copy(src, dest string, showProgress bool, excludeFilenames, excludeExtensions []string) error {
+func Copy(src, dest string, showProgress bool, excludeFilenames, excludeExtensions, excludeRegexs []string) error {
 	// Get the source information
 	info, err := os.Stat(src)
 	if err != nil {
@@ -37,7 +38,7 @@ func Copy(src, dest string, showProgress bool, excludeFilenames, excludeExtensio
 			// Get the destination path
 			destPath := filepath.Join(dest, path[len(src):])
 
-			if shouldExclude(info.Name(), excludeFilenames, excludeExtensions) {
+			if shouldExclude(info.Name(), excludeFilenames, excludeExtensions, excludeRegexs) {
 				return nil
 			}
 
@@ -57,7 +58,7 @@ func Copy(src, dest string, showProgress bool, excludeFilenames, excludeExtensio
 		}
 	} else {
 
-		if !shouldExclude(info.Name(), excludeFilenames, excludeExtensions) {
+		if !shouldExclude(info.Name(), excludeFilenames, excludeExtensions, excludeRegexs) {
 			// Copy normal file
 			wg.Add(1) // Increment the wait group to track the goroutines
 			copyFile(src, dest, &wg, showProgress)
@@ -120,7 +121,7 @@ func copyFile(src, dest string, wg *sync.WaitGroup, showProgress bool) {
 }
 
 // shouldExclude checks if a file should be excluded based on its name or extension
-func shouldExclude(filename string, excludeFilenames, excludeExtensions []string) bool {
+func shouldExclude(filename string, excludeFilenames, excludeExtensions, excludeRegexs []string) bool {
 	// Check with file for extensions
 	for _, ext := range excludeExtensions {
 		if strings.HasSuffix(filename, ext) {
@@ -135,6 +136,17 @@ func shouldExclude(filename string, excludeFilenames, excludeExtensions []string
 		}
 	}
 
-	// TODO: Check with regex
+	for _, pattern := range excludeRegexs {
+		match, err := regexp.Match(pattern, []byte(filename))
+		if err != nil {
+			return false
+		}
+
+		if !match {
+			continue
+		} else {
+			return true
+		}
+	}
 	return false
 }
