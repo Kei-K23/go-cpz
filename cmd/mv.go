@@ -47,7 +47,7 @@ func init() {
 	rootCmd.AddCommand(mvCmd)
 
 	// Define flag for cp command
-	mvCmd.Flags().BoolP("progress", "p", true, "Show progress indicator")
+	mvCmd.Flags().BoolP("progress", "p", false, "Show progress indicator")
 	mvCmd.Flags().StringSliceP("filter", "f", nil, "Filter file name to exclude when moving")
 	mvCmd.Flags().StringSliceP("extensions", "e", nil, "Filter files to exclude when moving with extensions")
 	mvCmd.Flags().StringSliceP("regex", "r", nil, "Filter files to exclude when moving with regular expression")
