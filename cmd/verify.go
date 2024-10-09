@@ -13,7 +13,7 @@ import (
 // verifyCmd represents the verify command
 var verifyCmd = &cobra.Command{
 	Use:   "verify [source] [destination]",
-	Short: "Verify and identify between source and destination file or directory",
+	Short: "verify and identify between source and destination file or directory",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 2 {
 			fmt.Println("please provide both source and destination paths e.g(cpz verify <source> <destination>)")
@@ -25,7 +25,7 @@ var verifyCmd = &cobra.Command{
 
 		err := lib.Verify(source, destination)
 		if err != nil {
-			fmt.Printf("Verification failed: %v\n", err)
+			fmt.Printf("verification failed: %v\n", err)
 		} else {
 			fmt.Println("Source and destination are identical.")
 		}

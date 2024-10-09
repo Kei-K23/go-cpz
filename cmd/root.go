@@ -30,10 +30,18 @@ func completionCommand() *cobra.Command {
 	}
 }
 
+func helpCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "help",
+		Short: "Help about any command",
+	}
+}
+
 func init() {
 	completion := completionCommand()
 	// mark completion command hidden
 	completion.Hidden = true
+
 	rootCmd.AddCommand(completion)
 
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")

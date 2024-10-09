@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/cheggaaa/pb/v3"
@@ -17,7 +18,7 @@ import (
 // Limit the number of concurrent copy operations
 var semaphore = make(chan struct{}, 5) // Adjust the size as needed to control concurrency
 
-func Copy(src, dest string, showProgress bool) error {
+func Copy(src, dest string, showProgress bool, excludeFilenames, excludeExtensions []string) error {
 	// Get the source information
 	info, err := os.Stat(src)
 	if err != nil {
@@ -36,6 +37,10 @@ func Copy(src, dest string, showProgress bool) error {
 			// Get the destination path
 			destPath := filepath.Join(dest, path[len(src):])
 
+			if shouldExclude(info.Name(), excludeFilenames, excludeExtensions) {
+				return nil
+			}
+
 			// If encounter dir while walking through the source folder
 			if info.IsDir() {
 				// Create all the directories in the destination path
@@ -51,9 +56,12 @@ func Copy(src, dest string, showProgress bool) error {
 			return err
 		}
 	} else {
-		// Copy normal file
-		wg.Add(1) // Increment the wait group to track the goroutines
-		copyFile(src, dest, &wg, showProgress)
+
+		if !shouldExclude(info.Name(), excludeFilenames, excludeExtensions) {
+			// Copy normal file
+			wg.Add(1) // Increment the wait group to track the goroutines
+			copyFile(src, dest, &wg, showProgress)
+		}
 	}
 
 	wg.Wait() // Wait for all goroutines to finish
@@ -71,7 +79,7 @@ func copyFile(src, dest string, wg *sync.WaitGroup, showProgress bool) {
 		// Open the source file
 		srcFile, err := os.Open(src)
 		if err != nil {
-			fmt.Printf("Error opening source file: %v\n", err)
+			fmt.Printf("error opening source file: %v\n", err)
 			return
 		}
 		defer srcFile.Close()
@@ -79,7 +87,7 @@ func copyFile(src, dest string, wg *sync.WaitGroup, showProgress bool) {
 		// Create the destination file
 		destFile, err := os.Create(dest)
 		if err != nil {
-			fmt.Printf("Error creating destination file: %v\n", err)
+			fmt.Printf("error creating destination file: %v\n", err)
 			return
 		}
 		defer destFile.Close()
@@ -91,7 +99,7 @@ func copyFile(src, dest string, wg *sync.WaitGroup, showProgress bool) {
 			// Get the metadata of the source file
 			srcInfo, err := srcFile.Stat()
 			if err != nil {
-				fmt.Printf("Error getting source file information: %v\n", err)
+				fmt.Printf("error getting source file information: %v\n", err)
 				return
 			}
 			// Create progress indicator
@@ -103,10 +111,30 @@ func copyFile(src, dest string, wg *sync.WaitGroup, showProgress bool) {
 		// Start copying the file
 		_, err = io.Copy(destFile, rdr)
 		if err != nil {
-			fmt.Printf("Error copying file: %v\n", err)
+			fmt.Printf("error copying file: %v\n", err)
 			return
 		}
 
-		fmt.Printf("Copied %s to %s\n", src, dest)
+		fmt.Printf("copied %s to %s\n", src, dest)
 	}()
+}
+
+// shouldExclude checks if a file should be excluded based on its name or extension
+func shouldExclude(filename string, excludeFilenames, excludeExtensions []string) bool {
+	// Check with file for extensions
+	for _, ext := range excludeExtensions {
+		if strings.HasSuffix(filename, ext) {
+			return true
+		}
+	}
+
+	// Check with file for names
+	for _, name := range excludeFilenames {
+		if filename == name {
+			return true
+		}
+	}
+
+	// TODO: Check with regex
+	return false
 }

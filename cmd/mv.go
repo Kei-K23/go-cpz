@@ -14,7 +14,7 @@ import (
 // mvCmd represents the mv command
 var mvCmd = &cobra.Command{
 	Use:   "mv [source] [destination]",
-	Short: "Move files or directories with progress bar",
+	Short: "move files or directories with progress bar",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 2 {
 			fmt.Println("please provide both source and destination paths e.g(cpz mv <source> <destination>)")
@@ -24,8 +24,9 @@ var mvCmd = &cobra.Command{
 		source := args[0]
 		destination := args[1]
 		showProgress, _ := cmd.Flags().GetBool("progress")
+		excludeFilenames, _ := cmd.Flags().GetStringSlice("filter")
 
-		err := lib.Copy(source, destination, showProgress)
+		err := lib.Copy(source, destination, showProgress, excludeFilenames, nil)
 		if err != nil {
 			fmt.Printf("error : %v\n", err)
 			os.Exit(1)
@@ -45,4 +46,5 @@ func init() {
 
 	// Define flag for cp command
 	mvCmd.Flags().BoolP("progress", "p", true, "Show progress indicator")
+	mvCmd.Flags().StringSliceP("filter", "f", nil, "Filter file name to exclude when copying")
 }
